@@ -2,7 +2,7 @@
 /*
 Plugin Name: Vitrine Secundum
 Plugin URI: http://secundum.com.br/
-Description: Adicione Vitrines Secundum personalizadas nos seus posts. Lembre de configurar o Identificador MercadoSócios.
+Description: Adicione Vitrines Secundum personalizadas nos seus posts. Lembre de <a href="options-general.php?page=secundum_vitrine.php">configurar</a> o Identificador MercadoSócios.
 Author: Stanislaw Pusep e Jobson Lemos
 Version: 1.0
 License: GPL v3 - http://www.gnu.org/licenses/gpl-3.0.html
@@ -11,6 +11,7 @@ Requer WordPress 2.8.4 ou mais recente.
 */
 
 $SecVitr_IDML	= intval(get_option('SecVitr_IDML'));
+$SecVitr_COLS	= intval(get_option('SecVitr_COLS'));
 $SecVitr_CSS	= get_option('SecVitr_CSS');
 
 if (!function_exists('file_put_contents')) {
@@ -99,7 +100,7 @@ function SecVitr_AdmMenu() {
 }
 
 function SecVitr_SubPanel() {
-	global $wpdb, $SecVitr_IDML, $SecVitr_CSS;
+	global $wpdb, $SecVitr_IDML, $SecVitr_CSS, $SecVitr_COLS;
 
 	if (isset($_POST['info_update'])) {
 		update_option('SecVitr_IDML', intval($_POST['SecVitr_IDML']));
@@ -107,6 +108,14 @@ function SecVitr_SubPanel() {
 
 		update_option('SecVitr_CSS', $_POST['SecVitr_CSS']);
 		$SecVitr_CSS = get_option('SecVitr_CSS');
+
+		$newcols = intval($_POST['SecVitr_COLS']);
+		if ($SecVitr_COLS != $newcols) {
+			update_option('SecVitr_COLS', $newcols);
+			$SecVitr_COLS = get_option('SecVitr_COLS');
+
+			$wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}secvitr_cache`;");
+		}
 
 		echo "
 		<div class='updated'>
@@ -153,11 +162,24 @@ function SecVitr_SubPanel() {
 						<span class='description'>o <a href='http://pmsapp.mercadolivre.com.br/jm/ml.pms.servlets.ShowCampaignServlet' target='_blank'>código de traqueamento</a> (numérico, usualmente de 7 dígitos) da sua campanha pode ser visto clicando no botão mais à direita abaixo de <b>Ações</b></span>
 					</td>
 				</tr>
+				<tr valign='top'>
+					<th scope='row'>
+						<label for='SecVitr_COLS'>Produtos por anúncio:</label>
+					</th>
+					<td>
+						<select name='SecVitr_COLS' id='SecVitr_COLS'>";
+
+	for ($i = 2; $i <= 5; $i++)
+		printf("\n						<option value='%d' %s>%d</option>", $i, ($i == $SecVitr_COLS) ? 'selected="selected"' : '', $i);
+
+	echo "
+					</select>
+				</tr>
 			</table>
 
 			<h3>Código CSS da vitrine</h3>
 			<p><label for='SecVitr_CSS'></label></p>
-			<textarea name='SecVitr_CSS' id='SecVitr_CSS' class='large-text code' rows='3'>${SecVitr_CSS}</textarea>
+			<textarea name='SecVitr_CSS' id='SecVitr_CSS' class='large-text code' rows='10'>${SecVitr_CSS}</textarea>
 
 			<p class='submit'>
 				<input type='submit' name='info_update' value='Salvar alterações' class='button-primary' />
@@ -190,11 +212,11 @@ function SecVitr_Insert($content) {
 }
 
 function ad_fetch($busca, $categ) {
-	global $wpdb, $SecVitr_IDML;
+	global $wpdb, $SecVitr_IDML, $SecVitr_COLS;
 
 	$html = $wpdb->get_var("SELECT ad FROM `{$wpdb->prefix}secvitr_cache` WHERE (UNIX_TIMESTAMP(last) > UNIX_TIMESTAMP() - 24*3600) AND (srch = '${busca}') AND (ctg = ${categ})");
 	if (empty($html)) {
-		$html = secundum_fetch('sistema.secundum.com.br', "/vitrine.php/$busca/$categ");
+		$html = secundum_fetch('sistema.secundum.com.br', "/vitrine.php/${busca}/${categ}?${SecVitr_COLS}");
 		$wpdb->query($wpdb->prepare("
 			INSERT INTO `{$wpdb->prefix}secvitr_cache` (id, srch, ctg, ad)
 			VALUES (CRC32(CONCAT(%s, %d)), %s, %d, %s)
@@ -206,14 +228,29 @@ function ad_fetch($busca, $categ) {
 }
 
 function SecVitr_Activate() {
-	global $wpdb, $SecVitr_IDML, $SecVitr_CSS;
+	global $wpdb, $SecVitr_IDML, $SecVitr_CSS, $SecVitr_COLS;
 
 	$SecVitr_IDML = 1234567;
 	add_option('SecVitr_IDML', $SecVitr_IDML);
 
-	$SecVitr_CSS = ".sec_vitrine { font-family: Trebuchet MS; font-size: 10px; width: 480px; display: table; margin: 0 auto; }
+	$SecVitr_COLS = 4;
+	add_option('SecVitr_COLS', $SecVitr_COLS);
+
+	$SecVitr_CSS = ".sec_vitrine {
+	/* fonte Trebuchet MS; corpo 10 pixels */
+	font-family: Trebuchet MS;
+	font-size: 10px;
+	line-height: 14px;
+	/* texto centralizado na horizontal */
+	text-align: center;
+	vertical-align: top;
+	/* bloco de anúncio destacado e centralizado */
+	display: table;
+	margin: 0 auto;
+}
 .sec_item_img { width: 90px; height: 90px; border: 0; }
-.sec_item_cell { width: 110px; max-height: 240px; text-align: center; vertical-align: top; float: left; padding: 5px; }
+.sec_item_cell { width: 110px; max-height: 240px; float: left; padding: 5px; }
+.sec_link { font-weight: bold; float: right; }
 ";
 	add_option('SecVitr_CSS', $SecVitr_CSS);
 
