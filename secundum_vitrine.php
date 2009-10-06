@@ -99,7 +99,7 @@ function SecVitr_AdmMenu() {
 }
 
 function SecVitr_SubPanel() {
-	global $SecVitr_IDML, $SecVitr_CSS;
+	global $wpdb, $SecVitr_IDML, $SecVitr_CSS;
 
 	if (isset($_POST['info_update'])) {
 		update_option('SecVitr_IDML', intval($_POST['SecVitr_IDML']));
@@ -114,7 +114,29 @@ function SecVitr_SubPanel() {
 				<strong>Opções Atualizadas!</strong>
 			</p>
 		</div>";
-	};
+	} else if (isset($_POST['SecVitr_Reset'])) {
+		delete_option('SecVitr_IDML');
+		delete_option('SecVitr_CSS');
+		$wpdb->query("DROP TABLE `{$wpdb->prefix}secvitr_cache`;");
+
+		SecVitr_Activate();
+
+		echo "
+		<div class='updated'>
+			<p>
+				<strong>Opções Reiniciadas!</strong>
+			</p>
+		</div>";
+	} else if (isset($_POST['SecVitr_Cleanup'])) {
+		$wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}secvitr_cache`;");
+
+		echo "
+		<div class='updated'>
+			<p>
+				<strong>Cache esvaziado!</strong>
+			</p>
+		</div>";
+	}
 
 	echo "
 	<div class='wrap'>
@@ -139,6 +161,8 @@ function SecVitr_SubPanel() {
 
 			<p class='submit'>
 				<input type='submit' name='info_update' value='Salvar alterações' class='button-primary' />
+				<input type='submit' onclick='return confirm(\"Você realmente gostaria de restaurar as configurações originais e esvaziar o cache?\");' name='SecVitr_Reset' value='Configurações originais' />
+				<input type='submit' onclick='return confirm(\"Você realmente gostaria de limpar o cache?\");' name='SecVitr_Cleanup' value='Limpar cache' />
 			</p>
 		</form>
 	</div>";
@@ -193,22 +217,17 @@ function SecVitr_Activate() {
 ";
 	add_option('SecVitr_CSS', $SecVitr_CSS);
 
-	if (!$wpdb->query("
-			CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}secvitr_cache` (
-				`id` int(10) NOT NULL,
-				`last` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-				`srch` varchar(50) DEFAULT NULL,
-				`ctg` mediumint(8) unsigned DEFAULT '0',
-				`ad` text,
-				PRIMARY KEY (`id`),
-				KEY `idx` (`last`,`srch`,`ctg`)
-			) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='Cache da Vitrine Secundum';
-		")) {
-
-		echo '<!-- Erro ao criar a tabela secvitr_cache: ';
-		$wpdb->print_error();
-		echo '-->';
-	}
+	$wpdb->query("
+		CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}secvitr_cache` (
+			`id` int(10) NOT NULL,
+			`last` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+			`srch` varchar(50) DEFAULT NULL,
+			`ctg` mediumint(8) unsigned DEFAULT '0',
+			`ad` text,
+			PRIMARY KEY (`id`),
+			KEY `idx` (`last`,`srch`,`ctg`)
+		) ENGINE=MyISAM DEFAULT CHARSET=utf8 COLLATE=utf8_general_ci COMMENT='Cache da Vitrine Secundum';
+	");
 
 	return 1;
 }
