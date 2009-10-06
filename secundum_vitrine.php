@@ -211,9 +211,9 @@ function SecVitr_Activate() {
 	$SecVitr_IDML = 1234567;
 	add_option('SecVitr_IDML', $SecVitr_IDML);
 
-	$SecVitr_CSS = ".sec_vitrine { font-family: Trebuchet MS; font-size: 11px; width: 480px; }
+	$SecVitr_CSS = ".sec_vitrine { font-family: Trebuchet MS; font-size: 10px; width: 480px; display: table; margin: 0 auto; }
 .sec_item_img { width: 90px; height: 90px; border: 0; }
-.sec_item_cell { width: 116px; max-height: 240px; text-align: center; vertical-align: top; float: left; padding: 2px; }
+.sec_item_cell { width: 110px; max-height: 240px; text-align: center; vertical-align: top; float: left; padding: 5px; }
 ";
 	add_option('SecVitr_CSS', $SecVitr_CSS);
 
