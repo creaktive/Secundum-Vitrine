@@ -7,10 +7,11 @@ Author: Stanislaw Pusep e Jobson Lemos
 Version: 1.0
 License: GPL v3 - http://www.gnu.org/licenses/gpl-3.0.html
 
-Requer WordPress 2.8.4 ou mais novo.
+Requer WordPress 2.8.4 ou mais recente.
 */
 
-$IDML = intval(get_option('SecVitr_IDML'));
+$SecVitr_IDML	= intval(get_option('SecVitr_IDML'));
+$SecVitr_CSS	= get_option('SecVitr_CSS');
 
 if (!function_exists('file_put_contents')) {
 	function file_put_contents($filename, $data) {
@@ -98,11 +99,14 @@ function SecVitr_AdmMenu() {
 }
 
 function SecVitr_SubPanel() {
-	global $IDML;
+	global $SecVitr_IDML, $SecVitr_CSS;
 
 	if (isset($_POST['info_update'])) {
 		update_option('SecVitr_IDML', intval($_POST['SecVitr_IDML']));
-		$IDML = intval(get_option('SecVitr_IDML'));
+		$SecVitr_IDML = intval(get_option('SecVitr_IDML'));
+
+		update_option('SecVitr_CSS', $_POST['SecVitr_CSS']);
+		$SecVitr_CSS = get_option('SecVitr_CSS');
 
 		echo "
 		<div class='updated'>
@@ -123,11 +127,15 @@ function SecVitr_SubPanel() {
 						<label for='SecVitr_IDML'>Identificador MercadoSócios</label>
 					</th>
 					<td>
-						<input type='text' name='SecVitr_IDML' id='SecVitr_IDML' value='$IDML' class='regular-text code' />
+						<input type='text' name='SecVitr_IDML' id='SecVitr_IDML' value='$SecVitr_IDML' class='regular-text code' />
 						<span class='description'>o <a href='http://pmsapp.mercadolivre.com.br/jm/ml.pms.servlets.ShowCampaignServlet' target='_blank'>código de traqueamento</a> (numérico, usualmente de 7 dígitos) da sua campanha pode ser visto clicando no botão mais à direita abaixo de <b>Ações</b></span>
 					</td>
 				</tr>
 			</table>
+
+			<h3>Código CSS da vitrine</h3>
+			<p><label for='SecVitr_CSS'></label></p>
+			<textarea name='SecVitr_CSS' id='SecVitr_CSS' class='large-text code' rows='3'>${SecVitr_CSS}</textarea>
 
 			<p class='submit'>
 				<input type='submit' name='info_update' value='Salvar alterações' class='button-primary' />
@@ -137,13 +145,8 @@ function SecVitr_SubPanel() {
 }
 
 function SecVitr_Header() {
-	echo "
-<style type='text/css'>
-	.sec_vitrine { font-family: Trebuchet MS; font-size: 11px; width: 480px; }
-	.sec_item_img { width: 90px; height: 90px; border: 0; }
-	.sec_item_cell { width: 118px; max-height: 240px; text-align: center; vertical-align: top; float: left; }
-</style>
-";
+	global $SecVitr_CSS;
+	echo "<style type='text/css'>\n${SecVitr_CSS}</style>\n";
 }
 
 function SecVitr_MetaBox() {
@@ -154,16 +157,16 @@ function SecVitr_MetaBox() {
 }
 
 function SecVitr_Edit() {
-	global $IDML;
-	echo "<iframe src='http://sistema.secundum.com.br/vitrine-custom.php?idml=$IDML' style='border: 0; width: 100%; height: 500px;' marginwidth='0' marginheight='0' frameborder='0' scrolling='yes'></iframe>\n";
+	global $SecVitr_IDML;
+	echo "<iframe src='http://sistema.secundum.com.br/vitrine-custom.php?idml=${SecVitr_IDML}' style='border: 0; width: 100%; height: 500px;' marginwidth='0' marginheight='0' frameborder='0' scrolling='auto'></iframe>\n";
 }
 
 function SecVitr_Insert($content) {
-	return preg_replace('%\[secvitrine/([a-z0-9\-]+)/([0-9]{4,6})\]%ei', 'ad_fetch(stripslashes("$1"), $2)', $content);
+	return preg_replace('%\[secvitrine/([a-z0-9\-]+)/([0-9]{4,6})\]%ei', 'ad_fetch(strtolower("$1"), $2)', $content);
 }
 
 function ad_fetch($busca, $categ) {
-	global $wpdb, $IDML;
+	global $wpdb, $SecVitr_IDML;
 
 	$html = $wpdb->get_var("SELECT ad FROM `{$wpdb->prefix}secvitr_cache` WHERE (UNIX_TIMESTAMP(last) > UNIX_TIMESTAMP() - 24*3600) AND (srch = '${busca}') AND (ctg = ${categ})");
 	if (empty($html)) {
@@ -175,14 +178,20 @@ function ad_fetch($busca, $categ) {
 		", $busca, $categ, $busca, $categ, $html, $html));
 	}
 
-	return str_replace('%IDML%', $IDML, $html);
+	return str_replace('%IDML%', $SecVitr_IDML, $html);
 }
 
 function SecVitr_Activate() {
-	global $wpdb, $IDML;
+	global $wpdb, $SecVitr_IDML, $SecVitr_CSS;
 
-	$IDML = 1234567;
-	add_option('SecVitr_IDML', $IDML);
+	$SecVitr_IDML = 1234567;
+	add_option('SecVitr_IDML', $SecVitr_IDML);
+
+	$SecVitr_CSS = ".sec_vitrine { font-family: Trebuchet MS; font-size: 11px; width: 480px; }
+.sec_item_img { width: 90px; height: 90px; border: 0; }
+.sec_item_cell { width: 116px; max-height: 240px; text-align: center; vertical-align: top; float: left; padding: 2px; }
+";
+	add_option('SecVitr_CSS', $SecVitr_CSS);
 
 	if (!$wpdb->query("
 			CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}secvitr_cache` (
