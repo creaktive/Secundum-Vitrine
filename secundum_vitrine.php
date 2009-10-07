@@ -1,10 +1,10 @@
 <?php
 /*
 Plugin Name: Vitrine Secundum
-Plugin URI: http://secundum.com.br/
+Plugin URI: http://secundum.com.br/vitrine-secundum
 Description: Adicione Vitrines Secundum personalizadas nos seus posts. Lembre de <a href="options-general.php?page=secundum_vitrine.php">configurar</a> o Identificador MercadoSócios.
 Author: Stanislaw Pusep e Jobson Lemos
-Version: 1.0
+Version: 1.1
 License: GPL v3 - http://www.gnu.org/licenses/gpl-3.0.html
 
 Requer WordPress 2.8.4 ou mais recente.
@@ -14,55 +14,13 @@ $SecVitr_IDML	= intval(get_option('SecVitr_IDML'));
 $SecVitr_COLS	= intval(get_option('SecVitr_COLS'));
 $SecVitr_CSS	= get_option('SecVitr_CSS');
 
-if (!function_exists('file_put_contents')) {
-	function file_put_contents($filename, $data) {
-		$f = @fopen($filename, 'w');
-		if (!$f) {
-			return false;
-		} else {
-			$bytes = fwrite($f, $data);
-			fclose($f);
-			return $bytes;
-		}
-	}
-}
 
-if (!function_exists('gzdecode')) {
-	function gzdecode($data) {
-		$len = strlen($data);
-		if ($len < 18 || strcmp(substr($data,0,2),"\x1f\x8b")) {
-			return null;	// Not GZIP format (See RFC 1952)
-		}
-
-		$g = tempnam(sys_get_temp_dir(), 'secundum_words');
-		@file_put_contents($g, $data);
-		ob_start();
-		readgzfile($g);
-		@unlink($g);
-		$d = ob_get_clean();
-		return $d;
-	}
-}
-
-if (!function_exists('sys_get_temp_dir')) {
-	function sys_get_temp_dir() {
-		if (!empty($_ENV['TMP']))		{ return realpath($_ENV['TMP']); }
-		if (!empty($_ENV['TMPDIR']))	{ return realpath($_ENV['TMPDIR']); }
-		if (!empty($_ENV['TEMP']))		{ return realpath($_ENV['TEMP']); }
-		$tempfile = tempnam(uniqid(rand(), TRUE), '');
-		if (file_exists($tempfile)) {
-			@unlink($tempfile);
-			return realpath(dirname($tempfile));
-		}
-	}
-}
-
-function secundum_fetch($host, $file, $port = 80, $timeout = 10) {
-	$gzip		= (function_exists('gzdecode') || function_exists('readgzfile')) ? true : false;
+function SecVitr_fetch($host, $file, $port = 80, $timeout = 10) {
+	$gzip		= function_exists('gzdecode');
 
 	$req		= "GET $file HTTP/1.0\r\n";
 	$req		.= "Host: $host\r\n";
-	$req		.= "User-Agent: WP Secundum Vitrine 1.0\r\n";
+	$req		.= "User-Agent: WP Vitrine Secundum 1.1\r\n";
 	if ($gzip)
 		$req	.= "Accept-Encoding: gzip\r\n";
 	$req		.= "\r\n";
@@ -72,7 +30,7 @@ function secundum_fetch($host, $file, $port = 80, $timeout = 10) {
 
 	if (false != ($fs = @fsockopen($host, $port, $errno, $errstr, $timeout))) {
 		fwrite($fs, $req);
-		while (!feof($fs) && (strlen($res) < 0x100000))	// 1 MB limit
+		while (!feof($fs) && (strlen($res) < 102400))	// 100 KB limit
 			$res .= fgets($fs, 1160);					// One TCP-IP packet
 		fclose($fs);
 
@@ -216,7 +174,7 @@ function ad_fetch($busca, $categ) {
 
 	$html = $wpdb->get_var("SELECT ad FROM `{$wpdb->prefix}secvitr_cache` WHERE (UNIX_TIMESTAMP(last) > UNIX_TIMESTAMP() - 24*3600) AND (srch = '${busca}') AND (ctg = ${categ})");
 	if (empty($html)) {
-		$html = secundum_fetch('sistema.secundum.com.br', "/vitrine.php/${busca}/${categ}?${SecVitr_COLS}");
+		$html = SecVitr_fetch('sistema.secundum.com.br', "/vitrine.php/${busca}/${categ}?${SecVitr_COLS}");
 		$wpdb->query($wpdb->prepare("
 			INSERT INTO `{$wpdb->prefix}secvitr_cache` (id, srch, ctg, ad)
 			VALUES (CRC32(CONCAT(%s, %d)), %s, %d, %s)
