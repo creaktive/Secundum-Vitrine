@@ -10,6 +10,11 @@ License: GPL v3 - http://www.gnu.org/licenses/gpl-3.0.html
 Requer WordPress 2.8.4 ou mais recente.
 */
 
+define('SECVITR_VERS',	'2.0');
+define('SECVITR_HOST',	'sistema.secundum.com.br');
+define('SECVITR_CACHE',	'secvitr_cache');
+define('SECVITR_HINTS',	'secvitr_hints');
+
 $SecVitr_IDML	= intval(get_option('SecVitr_IDML'));
 $SecVitr_COLS	= intval(get_option('SecVitr_COLS'));
 $SecVitr_AUTO	= intval(get_option('SecVitr_AUTO'));
@@ -32,7 +37,7 @@ function SecVitr_fetch($host, $file, $content = null, $port = 80, $timeout = 60)
 		$req	= "GET $file HTTP/1.0\r\n";
 
 	$req		.= "Host: $host\r\n";
-	$req		.= "User-Agent: WP Vitrine Secundum 2.0\r\n";
+	$req		.= "User-Agent: WP Vitrine Secundum " . SECVITR_VERS . "\r\n";
 	$req		.= "Referer: " . get_permalink() . "\r\n";
 
 	if ($gzip)
@@ -97,7 +102,7 @@ function SecVitr_SubPanel() {
 			update_option('SecVitr_COLS', $newcols);
 			$SecVitr_COLS = get_option('SecVitr_COLS');
 
-			$wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}secvitr_cache`;");
+			$wpdb->query("TRUNCATE TABLE `" . $wpdb->prefix . SECVITR_CACHE . "`;");
 		}
 
 		echo "
@@ -112,8 +117,8 @@ function SecVitr_SubPanel() {
 		delete_option('SecVitr_AUTO');
 		delete_option('SecVitr_DAYS');
 		delete_option('SecVitr_CSS');
-		$wpdb->query("DROP TABLE `{$wpdb->prefix}secvitr_cache`;");
-		$wpdb->query("DROP TABLE `{$wpdb->prefix}secvitr_hints`;");
+		$wpdb->query("DROP TABLE `" . $wpdb->prefix . SECVITR_CACHE . "`;");
+		$wpdb->query("DROP TABLE `" . $wpdb->prefix . SECVITR_HINTS . "`;");
 
 		SecVitr_Activate();
 
@@ -124,8 +129,8 @@ function SecVitr_SubPanel() {
 			</p>
 		</div>";
 	} else if (isset($_POST['SecVitr_Cleanup'])) {
-		$wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}secvitr_cache`;");
-		$wpdb->query("TRUNCATE TABLE `{$wpdb->prefix}secvitr_hints`;");
+		$wpdb->query("TRUNCATE TABLE `" . $wpdb->prefix . SECVITR_CACHE . "`;");
+		$wpdb->query("TRUNCATE TABLE `" . $wpdb->prefix . SECVITR_HINTS . "`;");
 
 		echo "
 		<div class='updated'>
@@ -223,7 +228,7 @@ function SecVitr_MetaBox() {
 
 function SecVitr_Edit() {
 	global $SecVitr_IDML;
-	echo "<iframe src='http://sistema.secundum.com.br/vitrine-custom.php?idml=${SecVitr_IDML}' style='border: 0; width: 100%; height: 500px;' marginwidth='0' marginheight='0' frameborder='0' scrolling='auto'></iframe>\n";
+	echo "<iframe src='http://" . SECVITR_HOST . "/vitrine-custom.php?idml=${SecVitr_IDML}' style='border: 0; width: 100%; height: 500px;' marginwidth='0' marginheight='0' frameborder='0' scrolling='auto'></iframe>\n";
 }
 
 function SecVitr_Insert($content) {
@@ -254,11 +259,11 @@ function hint_fetch($content) {
 	if ($SecVitr_DAYS && ($last < ($SecVitr_INST - $SecVitr_DAYS*24*3600)))
 		return array();
 
-	$auto = $wpdb->get_var("SELECT hint FROM `{$wpdb->prefix}secvitr_hints` WHERE (postID = {$post->ID}) AND (UNIX_TIMESTAMP(last) > ${last})");
+	$auto = $wpdb->get_var("SELECT hint FROM `" . $wpdb->prefix . SECVITR_HINTS . "` WHERE (postID = {$post->ID}) AND (UNIX_TIMESTAMP(last) > ${last})");
 	if (empty($auto)) {
-		$auto = SecVitr_fetch('sistema.secundum.com.br', '/vitrine-auto.php', 'txt=' . urlencode($content));
+		$auto = SecVitr_fetch(SECVITR_HOST, '/vitrine-auto.php', 'txt=' . urlencode($content));
 		$wpdb->query($wpdb->prepare("
-			INSERT INTO `{$wpdb->prefix}secvitr_hints` (postID, hint)
+			INSERT INTO `" . $wpdb->prefix . SECVITR_HINTS . "` (postID, hint)
 			VALUES (%d, %s)
 			ON DUPLICATE KEY UPDATE hint = %s
 		", $post->ID, $auto, $auto));
@@ -270,11 +275,11 @@ function hint_fetch($content) {
 function ad_fetch($busca, $categ = 0) {
 	global $wpdb, $SecVitr_IDML, $SecVitr_COLS;
 
-	$html = $wpdb->get_var("SELECT ad FROM `{$wpdb->prefix}secvitr_cache` WHERE (UNIX_TIMESTAMP(last) > UNIX_TIMESTAMP() - 24*3600) AND (srch = '${busca}') AND (ctg = ${categ})");
+	$html = $wpdb->get_var("SELECT ad FROM `" . $wpdb->prefix . SECVITR_CACHE . "` WHERE (UNIX_TIMESTAMP(last) > UNIX_TIMESTAMP() - 24*3600) AND (srch = '${busca}') AND (ctg = ${categ})");
 	if (empty($html)) {
-		$html = SecVitr_fetch('sistema.secundum.com.br', '/vitrine.php/' . $busca . ($categ ? '/' . $categ : '') . '?' . $SecVitr_COLS);
+		$html = SecVitr_fetch(SECVITR_HOST, '/vitrine.php/' . $busca . ($categ ? '/' . $categ : '') . '?' . $SecVitr_COLS);
 		$wpdb->query($wpdb->prepare("
-			INSERT INTO `{$wpdb->prefix}secvitr_cache` (id, srch, ctg, ad)
+			INSERT INTO `" . $wpdb->prefix . SECVITR_CACHE . "` (id, srch, ctg, ad)
 			VALUES (CRC32(CONCAT(%s, %d)), %s, %d, %s)
 			ON DUPLICATE KEY UPDATE ad = %s
 		", $busca, $categ, $busca, $categ, $html, $html));
@@ -320,7 +325,7 @@ function SecVitr_Activate() {
 	add_option('SecVitr_CSS', $SecVitr_CSS);
 
 	$wpdb->query("
-		CREATE TABLE IF NOT EXISTS `{$wpdb->prefix}secvitr_cache` (
+		CREATE TABLE IF NOT EXISTS `" . $wpdb->prefix . SECVITR_CACHE . "` (
 			`id` int(10) NOT NULL,
 			`last` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			`srch` varchar(50) DEFAULT NULL,
@@ -332,7 +337,7 @@ function SecVitr_Activate() {
 	");
 
 	$wpdb->query("
-		CREATE TABLE  IF NOT EXISTS `{$wpdb->prefix}secvitr_hints` (
+		CREATE TABLE  IF NOT EXISTS `" . $wpdb->prefix . SECVITR_HINTS . "` (
 			`postID` bigint(10) unsigned NOT NULL DEFAULT '0',
 			`last` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
 			`hint` text,
