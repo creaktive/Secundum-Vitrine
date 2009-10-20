@@ -256,7 +256,7 @@ function hint_fetch($content) {
 
 	$last = strtotime($post->post_modified);
 
-	if ($SecVitr_DAYS && ($last < ($SecVitr_INST - $SecVitr_DAYS*24*3600)))
+	if (($last > $SecVitr_INST) || ($SecVitr_DAYS && ($last < ($SecVitr_INST - $SecVitr_DAYS*24*3600))))
 		return array();
 
 	$auto = $wpdb->get_var("SELECT hint FROM `" . $wpdb->prefix . SECVITR_HINTS . "` WHERE (postID = {$post->ID}) AND (UNIX_TIMESTAMP(last) > ${last})");
