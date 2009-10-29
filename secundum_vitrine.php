@@ -4,13 +4,13 @@ Plugin Name: Vitrine Secundum
 Plugin URI: http://secundum.com.br/vitrine-secundum
 Description: Adicione Vitrines Secundum personalizadas nos seus posts. Lembre de <a href="options-general.php?page=secundum_vitrine.php">configurar</a> o Identificador MercadoSócios.
 Author: Stanislaw Pusep e Jobson Lemos
-Version: 2.0
+Version: 2.1
 License: GPL v3 - http://www.gnu.org/licenses/gpl-3.0.html
 
 Requer WordPress 2.8.4 ou mais recente.
 */
 
-define('SECVITR_VERS',	'2.0');
+define('SECVITR_VERS',	'2.1');
 define('SECVITR_HOST',	'sistema.secundum.com.br');
 define('SECVITR_CACHE',	'secvitr_cache');
 define('SECVITR_HINTS',	'secvitr_hints');
@@ -234,7 +234,7 @@ function SecVitr_Edit() {
 function SecVitr_Insert($content) {
 	global $SecVitr_AUTO;
 
-	if ($SecVitr_AUTO && !preg_match('%\[secvitrine/[a-z0-9\-]+(/[0-9]{4,6})?\]%ei', $content)) {
+	if ($SecVitr_AUTO && !preg_match('%(<!--\s*)?\[secvitrine/[a-z0-9\-]+(/[0-9]{4,6})?\](\s*-->)?%i', $content)) {
 		$hint = hint_fetch($content);
 		$n = count($hint);
 
@@ -245,8 +245,8 @@ function SecVitr_Insert($content) {
 			$content .= sprintf("\n[secvitrine/%s]\n", $hint[1]);
 	}
 
-	$content = preg_replace('%\[secvitrine/([a-z0-9\-]+)/([0-9]{4,6})\]%ei', 'ad_fetch(strtolower("$1"), $2)', $content);
-	$content = preg_replace('%\[secvitrine/([a-z0-9\-]+)\]%ei', 'ad_fetch(strtolower("$1"))', $content);
+	$content = preg_replace('%(?:<!--\s*)?\[secvitrine/([a-z0-9\-]+)/([0-9]{4,6})\](?:\s*-->)?%ei', 'ad_fetch(strtolower("$1"), $2)', $content);
+	$content = preg_replace('%(?:<!--\s*)?\[secvitrine/([a-z0-9\-]+)\](?:\s*-->)?%ei', 'ad_fetch(strtolower("$1"))', $content);
 
 	return $content;
 }
