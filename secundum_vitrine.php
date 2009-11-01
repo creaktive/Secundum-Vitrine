@@ -4,13 +4,13 @@ Plugin Name: Vitrine Secundum
 Plugin URI: http://secundum.com.br/vitrine-secundum
 Description: Adicione Vitrines Secundum personalizadas nos seus posts. Lembre de <a href="options-general.php?page=secundum_vitrine.php">configurar</a> o Identificador MercadoSócios.
 Author: Stanislaw Pusep e Jobson Lemos
-Version: 2.1
+Version: 2.1b
 License: GPL v3 - http://www.gnu.org/licenses/gpl-3.0.html
 
 Requer WordPress 2.8.4 ou mais recente.
 */
 
-define('SECVITR_VERS',	'2.1');
+define('SECVITR_VERS',	'2.1b');
 define('SECVITR_HOST',	'sistema.secundum.com.br');
 define('SECVITR_CACHE',	'secvitr_cache');
 define('SECVITR_HINTS',	'secvitr_hints');
@@ -353,7 +353,7 @@ function SecVitr_Activate() {
 add_action('admin_menu',	'SecVitr_AdmMenu');
 add_action('wp_head',		'SecVitr_Header');
 add_action('admin_menu',	'SecVitr_MetaBox');
-add_filter('the_content',	'SecVitr_Insert');
+add_filter('the_content',	'SecVitr_Insert', 1);
 
 register_activation_hook(__FILE__, 'SecVitr_Activate');
 
