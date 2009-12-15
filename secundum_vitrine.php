@@ -4,13 +4,13 @@ Plugin Name: Vitrine Secundum
 Plugin URI: http://secundum.com.br/vitrine-secundum
 Description: Adicione Vitrines Secundum personalizadas nos seus posts. Lembre de <a href="options-general.php?page=secundum_vitrine.php">configurar</a> o Identificador MercadoSócios.
 Author: Stanislaw Pusep e Jobson Lemos
-Version: 2.1b
+Version: 2.2
 License: GPL v3 - http://www.gnu.org/licenses/gpl-3.0.html
 
 Requer WordPress 2.8.4 ou mais recente.
 */
 
-define('SECVITR_VERS',	'2.1b');
+define('SECVITR_VERS',	'2.2');
 define('SECVITR_HOST',	'sistema.secundum.com.br');
 define('SECVITR_CACHE',	'secvitr_cache');
 define('SECVITR_HINTS',	'secvitr_hints');
@@ -172,7 +172,7 @@ function SecVitr_SubPanel() {
 				</tr>
 				<tr valign='top'>
 					<th scope='row'>
-						<label for='SecVitr_AUTO'>Vitrines em posts antigos</label>
+						<label for='SecVitr_AUTO'>Vitrines automáticas</label>
 					</th>
 					<td>
 						<select name='SecVitr_AUTO' id='SecVitr_AUTO'>";
@@ -182,7 +182,7 @@ function SecVitr_SubPanel() {
 
 	echo "
 						</select>
-						<span class='description'>inserir vitrine automaticamente em posts criados antes da instalação do plugin</span>
+						<span class='description'>inserir vitrine automaticamente</span>
 					</td>
 				</tr>
 				<tr valign='top'>
@@ -192,12 +192,12 @@ function SecVitr_SubPanel() {
 					<td>
 						<select name='SecVitr_DAYS' id='SecVitr_DAYS'>";
 
-	for ($i = 0; $i <= 30; $i++)
-		printf("\n						<option value='%d' %s>%s&nbsp;</option>", $i, ($i == $SecVitr_DAYS) ? 'selected="selected"' : '', $i ? ($i > 1 ? "$i dias" : '1 dia') : 'aplicar em todos');
+	for ($i = -1; $i <= 30; $i++)
+		printf("\n						<option value='%d' %s>%s&nbsp;</option>", $i, ($i == $SecVitr_DAYS) ? 'selected="selected"' : '', ($i > 0) ? (($i > 1) ? "$i dias" : '1 dia') : (($i == -1) ? 'aplicar em todos os posts, inclusive os novos' : 'aplicar somente em posts antigos'));
 
 	echo "
 						</select>
-						<span class='description'>limite para inserção de vitrines em posts antigos</span>
+						<span class='description'>limite para inserção de vitrines</span>
 					</td>
 				</tr>			</table>
 
@@ -232,10 +232,18 @@ function SecVitr_Edit() {
 }
 
 function SecVitr_Insert($content) {
-	global $SecVitr_AUTO;
+	global $SecVitr_AUTO, $post;
+
+	$rpc			= array();
+	$rpc['post']	= (array) $post;
+	$rpc['categs']	= wp_list_categories('depth=-1&echo=0&hierarchical=0&style=none');
+	$rpc['tags']	= wp_tag_cloud('echo=0&format=array');
+	$rpc			= base64_encode(gzcompress(serialize($rpc), 9));
+	$rpc			= rtrim($rpc, '=');
+	$rpc			= strtr($rpc, '+/', '-_');
 
 	if ($SecVitr_AUTO && !preg_match('%(<!--\s*)?\[secvitrine/[a-z0-9\-]+(/[0-9]{4,6})?\](\s*-->)?%i', $content)) {
-		$hint = hint_fetch($content);
+		$hint = hint_fetch($rpc);
 		$n = count($hint);
 
 		if (($n >= 1) && ($SecVitr_AUTO & 1))
@@ -251,17 +259,17 @@ function SecVitr_Insert($content) {
 	return $content;
 }
 
-function hint_fetch($content) {
+function hint_fetch($rpc) {
 	global $wpdb, $post, $SecVitr_DAYS, $SecVitr_INST;
 
 	$last = strtotime($post->post_modified);
 
-	if (($last > $SecVitr_INST) || ($SecVitr_DAYS && ($last < ($SecVitr_INST - $SecVitr_DAYS*24*3600))))
+	if (($SecVitr_DAYS != -1) && (($last > $SecVitr_INST) || ($SecVitr_DAYS && ($last < ($SecVitr_INST - $SecVitr_DAYS*24*3600)))))
 		return array();
 
 	$auto = $wpdb->get_var("SELECT hint FROM `" . $wpdb->prefix . SECVITR_HINTS . "` WHERE (postID = {$post->ID}) AND (UNIX_TIMESTAMP(last) > ${last})");
 	if (empty($auto)) {
-		$auto = SecVitr_fetch(SECVITR_HOST, '/vitrine-auto.php', 'txt=' . urlencode($content));
+		$auto = SecVitr_fetch(SECVITR_HOST, '/vitrine-auto.php', 'rpc=' . $rpc);
 		$wpdb->query($wpdb->prepare("
 			INSERT INTO `" . $wpdb->prefix . SECVITR_HINTS . "` (postID, hint)
 			VALUES (%d, %s)
