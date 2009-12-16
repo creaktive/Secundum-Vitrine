@@ -4,13 +4,13 @@ Plugin Name: Vitrine Secundum
 Plugin URI: http://secundum.com.br/vitrine-secundum
 Description: Adicione Vitrines Secundum personalizadas nos seus posts. Lembre de <a href="options-general.php?page=secundum_vitrine.php">configurar</a> o Identificador MercadoSócios.
 Author: Stanislaw Pusep e Jobson Lemos
-Version: 2.2
+Version: 2.4
 License: GPL v3 - http://www.gnu.org/licenses/gpl-3.0.html
 
 Requer WordPress 2.8.4 ou mais recente.
 */
 
-define('SECVITR_VERS',	'2.2');
+define('SECVITR_VERS',	'2.4');
 define('SECVITR_HOST',	'sistema.secundum.com.br');
 define('SECVITR_CACHE',	'secvitr_cache');
 define('SECVITR_HINTS',	'secvitr_hints');
@@ -18,6 +18,7 @@ define('SECVITR_HINTS',	'secvitr_hints');
 $SecVitr_IDML	= intval(get_option('SecVitr_IDML'));
 $SecVitr_COLS	= intval(get_option('SecVitr_COLS'));
 $SecVitr_AUTO	= intval(get_option('SecVitr_AUTO'));
+$SecVitr_HOME	= intval(get_option('SecVitr_HOME'));
 $SecVitr_DAYS	= intval(get_option('SecVitr_DAYS'));
 $SecVitr_INST	= intval(get_option('SecVitr_INST'));
 $SecVitr_CSS	= get_option('SecVitr_CSS');
@@ -82,14 +83,17 @@ function SecVitr_AdmMenu() {
 }
 
 function SecVitr_SubPanel() {
-	global $wpdb, $SecVitr_IDML, $SecVitr_CSS, $SecVitr_COLS, $SecVitr_AUTO, $SecVitr_DAYS;
+	global $wpdb, $SecVitr_IDML, $SecVitr_CSS, $SecVitr_COLS, $SecVitr_AUTO, $SecVitr_HOME, $SecVitr_DAYS;
 
 	if (isset($_POST['info_update'])) {
 		update_option('SecVitr_IDML', intval($_POST['SecVitr_IDML']));
 		$SecVitr_IDML = intval(get_option('SecVitr_IDML'));
 
-		update_option('SecVitr_AUTO', intval($_POST['SecVitr_AUTO']));
+		update_option('SecVitr_AUTO', intval($_POST['SecVitr_AUTO1']) + (intval($_POST['SecVitr_AUTO2']) << 2) + (intval($_POST['SecVitr_AUTO3']) << 4));
 		$SecVitr_AUTO = intval(get_option('SecVitr_AUTO'));
+
+		update_option('SecVitr_HOME', intval($_POST['SecVitr_HOME']));
+		$SecVitr_HOME = intval(get_option('SecVitr_HOME'));
 
 		update_option('SecVitr_DAYS', intval($_POST['SecVitr_DAYS']));
 		$SecVitr_DAYS = intval(get_option('SecVitr_DAYS'));
@@ -115,6 +119,7 @@ function SecVitr_SubPanel() {
 		delete_option('SecVitr_IDML');
 		delete_option('SecVitr_COLS');
 		delete_option('SecVitr_AUTO');
+		delete_option('SecVitr_HOME');
 		delete_option('SecVitr_DAYS');
 		delete_option('SecVitr_CSS');
 		$wpdb->query("DROP TABLE `" . $wpdb->prefix . SECVITR_CACHE . "`;");
@@ -157,6 +162,14 @@ function SecVitr_SubPanel() {
 				</tr>
 				<tr valign='top'>
 					<th scope='row'>
+						<label for='SecVitr_HOME'>Vitrines na página inicial</label>
+					</th>
+					<td>
+						<input name='SecVitr_HOME' id='SecVitr_HOME' value='1' " . ($SecVitr_HOME ? "checked='checked' " : '') . "type='checkbox' />
+					</td>
+				</tr>
+				<tr valign='top'>
+					<th scope='row'>
 						<label for='SecVitr_COLS'>Produtos por anúncio</label>
 					</th>
 					<td>
@@ -172,17 +185,40 @@ function SecVitr_SubPanel() {
 				</tr>
 				<tr valign='top'>
 					<th scope='row'>
-						<label for='SecVitr_AUTO'>Vitrines automáticas</label>
+						<label for='SecVitr_AUTO1'>Vitrines automáticas no topo</label>
 					</th>
 					<td>
-						<select name='SecVitr_AUTO' id='SecVitr_AUTO'>";
+						<select name='SecVitr_AUTO1' id='SecVitr_AUTO1'>";
 
-	foreach (array(0 => 'desabilitar', 1 => 'no topo', 2 => 'no rodapé', 3 => 'no topo e no rodapé') as $i => $n)
-		printf("\n						<option value='%d' %s>%s&nbsp;</option>", $i, ($i == $SecVitr_AUTO) ? 'selected="selected"' : '', $n);
+	for ($i = 0; $i <= 3; $i++)
+		printf("\n						<option value='%d' %s>%s&nbsp;</option>", $i, ($i == ($SecVitr_AUTO & 0x3)) ? 'selected="selected"' : '', $i ? $i : 'desabilitado');
 
 	echo "
 						</select>
-						<span class='description'>inserir vitrine automaticamente</span>
+						<span class='description'></span>
+					</td>
+				</tr>
+				<tr valign='top'>
+					<th scope='row'>
+						<label for='SecVitr_AUTO2'>Vitrines automáticas no rodapé</label>
+					</th>
+					<td>
+						<select name='SecVitr_AUTO2' id='SecVitr_AUTO2'>";
+
+	for ($i = 0; $i <= 3; $i++)
+		printf("\n						<option value='%d' %s>%s&nbsp;</option>", $i, ($i == (($SecVitr_AUTO >> 2) & 0x3)) ? 'selected="selected"' : '', $i ? $i : 'desabilitado');
+
+	echo "
+						</select>
+						<span class='description'></span>
+					</td>
+				</tr>
+				<tr valign='top'>
+					<th scope='row'>
+						<label for='SecVitr_AUTO3'>Colocar vitrines automaticas mesmo nos posts que eu colocar manualmente</label>
+					</th>
+					<td>
+						<input name='SecVitr_AUTO3' id='SecVitr_AUTO3' value='1' " . (($SecVitr_AUTO & 0x10) ? "checked='checked' " : '') . "type='checkbox' />
 					</td>
 				</tr>
 				<tr valign='top'>
@@ -197,7 +233,7 @@ function SecVitr_SubPanel() {
 
 	echo "
 						</select>
-						<span class='description'>limite para inserção de vitrines</span>
+						<span class='description'>limite para inserção de vitrines automáticas</span>
 					</td>
 				</tr>			</table>
 
@@ -232,7 +268,10 @@ function SecVitr_Edit() {
 }
 
 function SecVitr_Insert($content) {
-	global $SecVitr_AUTO, $post;
+	global $SecVitr_AUTO, $SecVitr_HOME, $post;
+
+	if (($SecVitr_HOME == 0) && is_home())
+		return $content;
 
 	$rpc			= array();
 	$rpc['post']	= (array) $post;
@@ -242,15 +281,20 @@ function SecVitr_Insert($content) {
 	$rpc			= rtrim($rpc, '=');
 	$rpc			= strtr($rpc, '+/', '-_');
 
-	if ($SecVitr_AUTO && !preg_match('%(<!--\s*)?\[secvitrine/[a-z0-9\-]+(/[0-9]{4,6})?\](\s*-->)?%i', $content)) {
+	if (($SecVitr_AUTO & 0xf) && (($SecVitr_AUTO & 0x10) || !preg_match('%(<!--\s*)?\[secvitrine/[a-z0-9\-]+(/[0-9]{4,6})?\](\s*-->)?%i', $content))) {
 		$hint = hint_fetch($rpc);
-		$n = count($hint);
 
-		if (($n >= 1) && ($SecVitr_AUTO & 1))
-			$content = sprintf("[secvitrine/%s]\n\n", $hint[0]) . $content;
+		$pre = '';
+		$n = min(count($hint), ($SecVitr_AUTO) & 0x3);
+		for ($i = 0; $i < $n; $i++)
+			$pre .= sprintf("[secvitrine/%s]\n", array_shift($hint));
 
-		if (($n >= 2) && ($SecVitr_AUTO & 2))
-			$content .= sprintf("\n[secvitrine/%s]\n", $hint[1]);
+		$pos = '';
+		$n = min(count($hint), ($SecVitr_AUTO >> 2) & 0x3);
+		for ($i = 0; $i < $n; $i++)
+			$pos .= sprintf("\n[secvitrine/%s]", array_shift($hint));
+
+		$content = $pre . $content . $pos;
 	}
 
 	$content = preg_replace('%(?:<!--\s*)?\[secvitrine/([a-z0-9\-]+)/([0-9]{4,6})\](?:\s*-->)?%ei', 'ad_fetch(strtolower("$1"), $2)', $content);
@@ -297,7 +341,7 @@ function ad_fetch($busca, $categ = 0) {
 }
 
 function SecVitr_Activate() {
-	global $wpdb, $SecVitr_IDML, $SecVitr_CSS, $SecVitr_COLS, $SecVitr_AUTO, $SecVitr_DAYS, $SecVitr_INST;
+	global $wpdb, $SecVitr_IDML, $SecVitr_CSS, $SecVitr_COLS, $SecVitr_AUTO, $SecVitr_HOME, $SecVitr_DAYS, $SecVitr_INST;
 
 	$SecVitr_IDML = 1234567;
 	add_option('SecVitr_IDML', $SecVitr_IDML);
@@ -305,8 +349,11 @@ function SecVitr_Activate() {
 	$SecVitr_COLS = 4;
 	add_option('SecVitr_COLS', $SecVitr_COLS);
 
-	$SecVitr_AUTO = 3;
+	$SecVitr_AUTO = 0x5;
 	add_option('SecVitr_AUTO', $SecVitr_AUTO);
+
+	$SecVitr_HOME = 0;
+	add_option('SecVitr_HOME', $SecVitr_HOME);
 
 	$SecVitr_DAYS = 0;
 	add_option('SecVitr_DAYS', $SecVitr_DAYS);
