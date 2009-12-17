@@ -4,13 +4,13 @@ Plugin Name: Vitrine Secundum
 Plugin URI: http://secundum.com.br/vitrine-secundum
 Description: Adicione Vitrines Secundum personalizadas nos seus posts. Lembre de <a href="options-general.php?page=secundum_vitrine.php">configurar</a> o Identificador MercadoSócios.
 Author: Stanislaw Pusep e Jobson Lemos
-Version: 2.4
+Version: 2.5
 License: GPL v3 - http://www.gnu.org/licenses/gpl-3.0.html
 
 Requer WordPress 2.8.4 ou mais recente.
 */
 
-define('SECVITR_VERS',	'2.4');
+define('SECVITR_VERS',	'2.5');
 define('SECVITR_HOST',	'sistema.secundum.com.br');
 define('SECVITR_CACHE',	'secvitr_cache');
 define('SECVITR_HINTS',	'secvitr_hints');
@@ -21,6 +21,7 @@ $SecVitr_AUTO	= intval(get_option('SecVitr_AUTO'));
 $SecVitr_HOME	= intval(get_option('SecVitr_HOME'));
 $SecVitr_DAYS	= intval(get_option('SecVitr_DAYS'));
 $SecVitr_INST	= intval(get_option('SecVitr_INST'));
+$WordsSec_NUM	= intval(get_option('WordsSec_NUM'));
 $SecVitr_CSS	= get_option('SecVitr_CSS');
 
 if (filemtime(__FILE__) > $SecVitr_INST)
@@ -83,7 +84,7 @@ function SecVitr_AdmMenu() {
 }
 
 function SecVitr_SubPanel() {
-	global $wpdb, $SecVitr_IDML, $SecVitr_CSS, $SecVitr_COLS, $SecVitr_AUTO, $SecVitr_HOME, $SecVitr_DAYS;
+	global $wpdb, $SecVitr_IDML, $SecVitr_CSS, $SecVitr_COLS, $SecVitr_AUTO, $SecVitr_HOME, $SecVitr_DAYS, $WordsSec_NUM;
 
 	if (isset($_POST['info_update'])) {
 		update_option('SecVitr_IDML', intval($_POST['SecVitr_IDML']));
@@ -100,6 +101,9 @@ function SecVitr_SubPanel() {
 
 		update_option('SecVitr_CSS', $_POST['SecVitr_CSS']);
 		$SecVitr_CSS = get_option('SecVitr_CSS');
+
+		update_option('WordsSec_NUM', $_POST['WordsSec_NUM']);
+		$WordsSec_NUM = get_option('WordsSec_NUM');
 
 		$newcols = intval($_POST['SecVitr_COLS']);
 		if ($SecVitr_COLS != $newcols) {
@@ -122,6 +126,7 @@ function SecVitr_SubPanel() {
 		delete_option('SecVitr_HOME');
 		delete_option('SecVitr_DAYS');
 		delete_option('SecVitr_CSS');
+		delete_option('WordsSec_NUM');
 		$wpdb->query("DROP TABLE `" . $wpdb->prefix . SECVITR_CACHE . "`;");
 		$wpdb->query("DROP TABLE `" . $wpdb->prefix . SECVITR_HINTS . "`;");
 
@@ -149,6 +154,8 @@ function SecVitr_SubPanel() {
 	<div class='wrap'>
 		<h2>Opções da Vitrine Secundum</h2>
 
+		<iframe src='http://" . SECVITR_HOST . "/vitrine-banner.php?v=" . urlencode(SECVITR_VERS) . "' style='border: 0; width: 100%; height: 200px;' marginwidth='0' marginheight='0' frameborder='0' scrolling='auto'></iframe>
+
 		<form name='SecVitr' method='post' action=''>
 			<table class='form-table'>
 				<tr valign='top'>
@@ -158,6 +165,21 @@ function SecVitr_SubPanel() {
 					<td>
 						<input type='text' name='SecVitr_IDML' id='SecVitr_IDML' value='$SecVitr_IDML' class='regular-text code' />
 						<span class='description'>o <a href='http://pmsapp.mercadolivre.com.br/jm/ml.pms.servlets.ShowCampaignServlet' target='_blank'>código de traqueamento</a> (numérico, usualmente de 7 dígitos) da sua campanha pode ser visto clicando no botão mais à direita abaixo de <b>Ações</b></span>
+					</td>
+				</tr>
+				<tr valign='top'>
+					<th scope='row'>
+						<label for='WordsSec_NUM'>Links no texto do post</label>
+					</th>
+					<td>
+						<select name='WordsSec_NUM' id='WordsSec_NUM'>";
+
+	for ($i = 0; $i <= 10; $i++)
+		printf("\n						<option value='%d' %s>%s&nbsp;</option>", $i, ($i == $WordsSec_NUM) ? 'selected="selected"' : '', $i ? $i : 'desabilitar');
+
+	echo "
+						</select>
+						<span class='description'>quantidade de links a serem inseridos automaticamente, por post</span>
 					</td>
 				</tr>
 				<tr valign='top'>
@@ -268,10 +290,39 @@ function SecVitr_Edit() {
 }
 
 function SecVitr_Insert($content) {
-	global $SecVitr_AUTO, $SecVitr_HOME, $post;
+	global $SecVitr_IDML, $SecVitr_AUTO, $SecVitr_HOME, $post, $WordsSec_JS_LOADED, $WordsSec_NUM;
 
-	if (($SecVitr_HOME == 0) && is_home())
+	if (!empty($WordsSec_NUM)) {
+		$pre	= '<script type="text/javascript"><!--';
+		$pos	= '</div>';
+		$id		= 'WordsSec' . md5($content);
+
+		if (!isset($WordsSec_JS_LOADED)) {
+			$WordsSec_JS_LOADED = true;
+			$pre .= "
+secundum_words_idml = $SecVitr_IDML;
+secundum_words_maxrep = $WordsSec_NUM;
+secundum_words_ids = new Object();
+secundum_words_ids['$id'] = 1;
+//--></script>
+<script type=\"text/javascript\" src=\"http://widget.secundum.com.br/wordssec.js\"></script>
+";
+		} else
+			$pre .= "
+secundum_words_ids['$id'] = 1;
+//--></script>
+";
+
+		$pre .= "<div id=\"$id\">";
+		$content = $pre . $content . $pos;
+	}
+
+
+	if (($SecVitr_HOME == 0) && is_home()) {
+		$content = preg_replace('%(?:<!--\s*)?\[secvitrine/([a-z0-9\-]+)/([0-9]{4,6})\](?:\s*-->)?%i', '', $content);
+		$content = preg_replace('%(?:<!--\s*)?\[secvitrine/([a-z0-9\-]+)\](?:\s*-->)?%i', '', $content);
 		return $content;
+	}
 
 	$rpc			= array();
 	$rpc['post']	= (array) $post;
@@ -341,7 +392,7 @@ function ad_fetch($busca, $categ = 0) {
 }
 
 function SecVitr_Activate() {
-	global $wpdb, $SecVitr_IDML, $SecVitr_CSS, $SecVitr_COLS, $SecVitr_AUTO, $SecVitr_HOME, $SecVitr_DAYS, $SecVitr_INST;
+	global $wpdb, $SecVitr_IDML, $SecVitr_CSS, $SecVitr_COLS, $SecVitr_AUTO, $SecVitr_HOME, $SecVitr_DAYS, $SecVitr_INST, $WordsSec_NUM;
 
 	$SecVitr_IDML = 1234567;
 	add_option('SecVitr_IDML', $SecVitr_IDML);
@@ -355,11 +406,14 @@ function SecVitr_Activate() {
 	$SecVitr_HOME = 0;
 	add_option('SecVitr_HOME', $SecVitr_HOME);
 
-	$SecVitr_DAYS = 0;
+	$SecVitr_DAYS = -1;
 	add_option('SecVitr_DAYS', $SecVitr_DAYS);
 
 	$SecVitr_INST = time();
 	update_option('SecVitr_INST', $SecVitr_INST);
+
+	$WordsSec_NUM = 5;
+	update_option('WordsSec_NUM', $WordsSec_NUM);
 
 	$SecVitr_CSS = ".sec_vitrine {
 	/* fonte Trebuchet MS; corpo 10 pixels */
@@ -369,13 +423,16 @@ function SecVitr_Activate() {
 	/* texto centralizado na horizontal */
 	text-align: center;
 	vertical-align: top;
-	/* bloco de anúncio destacado e centralizado */
+	/* bloco de anuncio destacado e centralizado */
 	display: table;
 	margin: 0 auto;
 }
 .sec_item_img { width: 90px; height: 90px; border: 0; }
-.sec_item_cell { width: 110px; max-height: 240px; float: left; padding: 5px; }
+.sec_item_cell { width: 100px; max-height: 240px; float: left; padding: 5px; }
 .sec_link { font-weight: bold; float: right; }
+
+/* o link WordsSec */
+.secundum_words_link { color: #008000 !important; }
 ";
 	add_option('SecVitr_CSS', $SecVitr_CSS);
 
