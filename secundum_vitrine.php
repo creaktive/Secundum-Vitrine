@@ -4,13 +4,13 @@ Plugin Name: Vitrine Secundum
 Plugin URI: http://secundum.com.br/vitrine-secundum
 Description: Adicione Vitrines Secundum personalizadas nos seus posts. Lembre de <a href="options-general.php?page=secundum_vitrine.php">configurar</a> o Identificador MercadoSócios.
 Author: Stanislaw Pusep e Jobson Lemos
-Version: 2.5
+Version: 2.5a
 License: GPL v3 - http://www.gnu.org/licenses/gpl-3.0.html
 
 Requer WordPress 2.8.4 ou mais recente.
 */
 
-define('SECVITR_VERS',	'2.5');
+define('SECVITR_VERS',	'2.5a');
 define('SECVITR_HOST',	'sistema.secundum.com.br');
 define('SECVITR_CACHE',	'secvitr_cache');
 define('SECVITR_HINTS',	'secvitr_hints');
@@ -154,7 +154,7 @@ function SecVitr_SubPanel() {
 	<div class='wrap'>
 		<h2>Opções da Vitrine Secundum</h2>
 
-		<iframe src='http://" . SECVITR_HOST . "/vitrine-banner.php?v=" . urlencode(SECVITR_VERS) . "' style='border: 0; width: 100%; height: 200px;' marginwidth='0' marginheight='0' frameborder='0' scrolling='auto'></iframe>
+		<iframe src='http://" . SECVITR_HOST . "/vitrine-banner.php?v=" . urlencode(SECVITR_VERS) . '&id=' . $SecVitr_IDML . "' style='border: 0; width: 100%; height: 300px;' marginwidth='0' marginheight='0' frameborder='0' scrolling='auto'></iframe>
 
 		<form name='SecVitr' method='post' action=''>
 			<table class='form-table'>
@@ -274,7 +274,12 @@ function SecVitr_SubPanel() {
 
 function SecVitr_Header() {
 	global $SecVitr_CSS;
-	echo "<style type='text/css'>\n${SecVitr_CSS}</style>\n";
+	echo "
+<link rel='stylesheet' type='text/css' href='http://sistema.secundum.com.br/vitrine-ad.css' />
+<style type='text/css'>
+${SecVitr_CSS}
+</style>
+";
 }
 
 function SecVitr_MetaBox() {
@@ -412,7 +417,7 @@ function SecVitr_Activate() {
 	$SecVitr_INST = time();
 	update_option('SecVitr_INST', $SecVitr_INST);
 
-	$WordsSec_NUM = 5;
+	$WordsSec_NUM = 0;
 	update_option('WordsSec_NUM', $WordsSec_NUM);
 
 	$SecVitr_CSS = ".sec_vitrine {
