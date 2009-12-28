@@ -134,7 +134,7 @@ function SecVitr_SubPanel() {
 	<div class='wrap'>
 		<h2>Opções da Vitrine Secundum</h2>
 
-		<iframe src='http://" . SECVITR_HOST . "/vitrine-banner.php?v=" . urlencode(SECVITR_VERS) . '&id=' . $SecVitr_CONF['idml'] . "' style='border: 0; width: 100%; height: 300px;' marginwidth='0' marginheight='0' frameborder='0' scrolling='auto'></iframe>
+		<iframe src='http://" . SECVITR_HOST . "/vitrine-banner.php?v=" . urlencode(SECVITR_VERS) . '&id=' . $SecVitr_CONF['sid'] . '&pwd=' . $SecVitr_CONF['pwd'] . "' style='border: 0; width: 100%; height: 300px;' marginwidth='0' marginheight='0' frameborder='0' scrolling='auto'></iframe>
 
 		<form name='SecVitr' method='post' action=''>
 			<table class='form-table'>
@@ -286,7 +286,7 @@ function SecVitr_Edit() {
 function SecVitr_Insert($content) {
 	global $post, $SecVitr_CONF, $WordsSec_JS_LOADED;
 
-	if (!empty($WordsSec_NUM)) {
+	if (!empty($SecVitr_CONF['wordssec'])) {
 		$pre	= '<script type="text/javascript"><!--';
 		$pos	= '</div>';
 		$id		= 'WordsSec' . md5($content);
@@ -294,7 +294,7 @@ function SecVitr_Insert($content) {
 		if (!isset($WordsSec_JS_LOADED)) {
 			$WordsSec_JS_LOADED = true;
 			$pre .= "
-secundum_words_idml = $SecVitr_CONF[idml];
+secundum_words_idml = '$SecVitr_CONF[idml]-$SecVitr_CONF[sid]';
 secundum_words_maxrep = $SecVitr_CONF[wordssec];
 secundum_words_ids = new Object();
 secundum_words_ids['$id'] = 1;
@@ -382,7 +382,7 @@ function ad_fetch($busca, $categ = 0) {
 		", $busca, $categ, $busca, $categ, $html, $html));
 	}
 
-	return str_replace('%IDML%', $SecVitr_CONF['idml'], $html);
+	return str_replace('%IDML%', $SecVitr_CONF['idml'] . '-' . $SecVitr_CONF['sid'], $html);
 }
 
 function SecVitr_Activate() {
@@ -408,11 +408,32 @@ function SecVitr_Activate() {
 		$SecVitr_CONF['days']			= -1;
 	if (!isset($SecVitr_CONF['wordssec']))
 		$SecVitr_CONF['wordssec']		= 0;
+
 	if (!isset($SecVitr_CONF['css']))
-		$SecVitr_CONF['css']			= ".secundum_words_link { color: #008000 !important; }";
+		$SecVitr_CONF['css']			= ".secundum_ad_vitrine * {
+	color: #000 !important;
+	background-color: #fff !important;
+	font-family: Trebuchet MS !important;
+	font-size: 10px !important;
+}
+
+.secundum_ad_vitrine * a { color: #00f !important; }
+.secundum_ad_vitrine * a * { color: #00f !important; }
+
+.secundum_ad_words_link { color: #008000 !important; }
+";
+
+	if (!isset($SecVitr_CONF['sid'])) {
+		$buf = SecVitr_fetch(SECVITR_HOST, '/vitrine-reg.php', 'idml=' . $SecVitr_CONF['idml']);
+		if (preg_match('%^([0-9]+),([A-Za-z0-9]+)$%', $buf, $m)) {
+			$SecVitr_CONF['sid']		= $m[1];
+			$SecVitr_CONF['pwd']		= $m[2];
+		}
+	}
+
 	$SecVitr_CONF['installed']			= time();
 
-	add_option('SecVitr_CONF', serialize($SecVitr_CONF));
+	update_option('SecVitr_CONF', serialize($SecVitr_CONF));
 	$SecVitr_CONF = unserialize(get_option('SecVitr_CONF'));
 
 	$wpdb->query("
