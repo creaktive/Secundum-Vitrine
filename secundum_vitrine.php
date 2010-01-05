@@ -4,13 +4,13 @@ Plugin Name: Vitrine Secundum
 Plugin URI: http://secundum.com.br/vitrine-secundum
 Description: Adicione Vitrines Secundum personalizadas nos seus posts. Lembre de <a href="options-general.php?page=secundum_vitrine.php">configurar</a> o Identificador MercadoSócios.
 Author: Stanislaw Pusep e Jobson Lemos
-Version: 3.0
+Version: 3.0a
 License: GPL v3 - http://www.gnu.org/licenses/gpl-3.0.html
 
 Requer WordPress 2.8.4 ou mais recente.
 */
 
-define('SECVITR_VERS',	'3.0');
+define('SECVITR_VERS',	'3.0a');
 define('SECVITR_HOST',	'sistema.secundum.com.br');
 define('SECVITR_CACHE',	'secvitr_cache');
 define('SECVITR_HINTS',	'secvitr_hints');
@@ -145,15 +145,6 @@ function SecVitr_SubPanel() {
 					<td>
 						<input type='text' name='SecVitr_IDML' id='SecVitr_IDML' value='$SecVitr_CONF[idml]' class='regular-text code' />
 						<span class='description'>o <a href='http://pmsapp.mercadolivre.com.br/jm/ml.pms.servlets.ShowCampaignServlet' target='_blank'>código de traqueamento</a> (numérico, usualmente de 7 dígitos) da sua campanha pode ser visto clicando no botão mais à direita abaixo de <b>Ações</b></span>
-					</td>
-				</tr>
-				<tr valign='top'>
-					<th scope='row'>
-						<label for='SecVitr_IDSUB'>Identificador Submarino</label>
-					</th>
-					<td>
-						<input type='text' name='SecVitr_IDSUB' id='SecVitr_IDSUB' value='$SecVitr_CONF[idsub]' class='regular-text code' />
-						<span class='description'></span>
 					</td>
 				</tr>
 				<tr valign='top'>
@@ -326,7 +317,18 @@ secundum_words_ids['$id'] = 1;
 	$rpc			= rtrim($rpc, '=');
 	$rpc			= strtr($rpc, '+/', '-_');
 
-	if ($SecVitr_CONF['auto_force'] && ($SecVitr_CONF['auto_top'] || $SecVitr_CONF['auto_bottom'] || !preg_match('%(<!--\s*)?\[secvitrine/[a-z0-9\-]+(/[0-9]{4,6})?\](\s*-->)?%i', $content))) {
+	if (
+			(
+				$SecVitr_CONF['auto_force'] ||
+				!preg_match('%(<!--\s*)?\[secvitrine/[a-z0-9\-]+(/[0-9]{4,6})?\](\s*-->)?%i', $content)
+			)
+			&&
+			(
+				$SecVitr_CONF['auto_top'] ||
+				$SecVitr_CONF['auto_bottom']
+			)
+		) {
+
 		$hint = hint_fetch($rpc);
 
 		$pre = '';
