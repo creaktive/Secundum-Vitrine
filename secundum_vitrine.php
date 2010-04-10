@@ -4,13 +4,13 @@ Plugin Name: Vitrine Secundum
 Plugin URI: http://secundum.com.br/vitrine-secundum
 Description: Adicione Vitrines Secundum personalizadas nos seus posts. Lembre de <a href="options-general.php?page=secundum_vitrine.php">configurar</a> o Identificador MercadoSócios.
 Author: Stanislaw Pusep e Jobson Lemos
-Version: 3.0a
+Version: 3.0b
 License: GPL v3 - http://www.gnu.org/licenses/gpl-3.0.html
 
 Requer WordPress 2.8.4 ou mais recente.
 */
 
-define('SECVITR_VERS',	'3.0a');
+define('SECVITR_VERS',	'3.0b');
 define('SECVITR_HOST',	'sistema.secundum.com.br');
 define('SECVITR_CACHE',	'secvitr_cache');
 define('SECVITR_HINTS',	'secvitr_hints');
@@ -303,7 +303,7 @@ secundum_words_ids['$id'] = 1;
 	}
 
 
-	if (($SecVitr_CONF['home'] == 0) && is_home()) {
+	if (is_category() || (($SecVitr_CONF['home'] == 0) && is_home())) {
 		$content = preg_replace('%(?:<!--\s*)?\[secvitrine/([a-z0-9\-]+)/([0-9]{4,6})\](?:\s*-->)?%i', '', $content);
 		$content = preg_replace('%(?:<!--\s*)?\[secvitrine/([a-z0-9\-]+)\](?:\s*-->)?%i', '', $content);
 		return $content;
@@ -409,7 +409,7 @@ function SecVitr_Activate() {
 	if (!isset($SecVitr_CONF['days']))
 		$SecVitr_CONF['days']			= -1;
 	if (!isset($SecVitr_CONF['wordssec']))
-		$SecVitr_CONF['wordssec']		= 0;
+		$SecVitr_CONF['wordssec']		= 5;
 
 	if (!isset($SecVitr_CONF['css']))
 		$SecVitr_CONF['css']			= ".secundum_ad_vitrine * {
