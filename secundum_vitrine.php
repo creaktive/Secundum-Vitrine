@@ -4,13 +4,13 @@ Plugin Name: Vitrine Secundum
 Plugin URI: http://secundum.com.br/vitrine-secundum
 Description: Adicione Vitrines Secundum personalizadas nos seus posts. Lembre de <a href="options-general.php?page=secundum_vitrine.php">configurar</a> o Identificador MercadoSócios.
 Author: Stanislaw Pusep e Jobson Lemos
-Version: 3.0b
+Version: 3.0c
 License: GPL v3 - http://www.gnu.org/licenses/gpl-3.0.html
 
 Requer WordPress 2.8.4 ou mais recente.
 */
 
-define('SECVITR_VERS',	'3.0b');
+define('SECVITR_VERS',	'3.0c');
 define('SECVITR_HOST',	'sistema.secundum.com.br');
 define('SECVITR_CACHE',	'secvitr_cache');
 define('SECVITR_HINTS',	'secvitr_hints');
@@ -21,7 +21,7 @@ if (empty($SecVitr_CONF['installed']) || (filemtime(__FILE__) > $SecVitr_CONF['i
 	SecVitr_Activate();
 
 
-function SecVitr_fetch($host, $file, $content = null, $port = 80, $timeout = 60) {
+function SecVitr_fetch($host, $file, $content = null, $port = 80, $timeout = 10) {
 	$gzip		= function_exists('gzdecode');
 
 	if (isset($content)) {
@@ -374,7 +374,8 @@ function hint_fetch($rpc) {
 function ad_fetch($busca, $categ = 0) {
 	global $wpdb, $SecVitr_CONF;
 
-	$html = $wpdb->get_var("SELECT ad FROM `" . $wpdb->prefix . SECVITR_CACHE . "` WHERE (UNIX_TIMESTAMP(last) > UNIX_TIMESTAMP() - 24*3600) AND (srch = '${busca}') AND (ctg = ${categ})");
+	$rand = rand();
+	$html = $wpdb->get_var("SELECT ad FROM `" . $wpdb->prefix . SECVITR_CACHE . "` WHERE (UNIX_TIMESTAMP(last) > UNIX_TIMESTAMP() - ${rand}*24*3600) AND (srch = '${busca}') AND (ctg = ${categ})");
 	if (empty($html)) {
 		$html = SecVitr_fetch(SECVITR_HOST, '/vitrine.php/' . $busca . ($categ ? '/' . $categ : '') . '?' . $SecVitr_CONF['cols']);
 		$wpdb->query($wpdb->prepare("
